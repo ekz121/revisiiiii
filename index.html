@@ -5,9 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Route Planner Gresik - Laporan Jalan Rusak</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        #map { height: 600px; width: 100%; border-radius: 15px; box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff; }
+        body {
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            background: #f0f0f0;
+            color: #333;
+        }
+        #map { 
+            height: 400px; 
+            width: 100%; 
+            border-radius: 15px; 
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff; 
+            margin-bottom: 1rem; 
+        }
         .error { color: red; }
         .damage-item { cursor: pointer; }
         .marker-legend span { margin-right: 10px; }
@@ -15,7 +32,7 @@
             background: #f0f0f0;
             border-radius: 15px;
             box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
-            padding: 20px;
+            padding: 1.5rem;
             transition: all 0.3s ease;
         }
         .neumorphic:hover {
@@ -25,11 +42,13 @@
             background: #f0f0f0;
             border-radius: 10px;
             box-shadow: 3px 3px 8px #e0e0e0, -3px -3px 8px #ffffff;
-            padding: 8px 16px;
+            padding: 0.5rem 1rem;
             border: none;
             cursor: pointer;
             color: #333;
             transition: all 0.3s ease;
+            font-size: 1rem;
+            touch-action: manipulation;
         }
         .neumorphic-button:hover {
             box-shadow: 2px 2px 6px #c0c0c0, -2px -2px 6px #ffffff;
@@ -37,197 +56,15 @@
         .neumorphic-button:active {
             box-shadow: inset 2px 2px 6px #c0c0c0, inset -2px -2px 6px #ffffff;
         }
-        .lightbox { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0, 0, 0, 0.8); 
-            z-index: 1000; 
-            justify-content: center; 
-            align-items: center; 
-        }
-        .lightbox-content { 
-            background: #f0f0f0;
-            border-radius: 15px;
-            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
-            padding: 20px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            position: relative;
-        }
-        .close-lightbox { 
-            position: absolute; 
-            top: 10px; 
-            right: 20px; 
-            font-size: 24px; 
-            cursor: pointer; 
-            color: #333;
-        }
-        .dark-theme {
-            background: #1a1a1a;
-            color: #00FFAA;
-        }
-        .dark-theme .neumorphic {
-            background: #2d2d2d;
-            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
-        }
-        .dark-theme .neumorphic:hover {
-            box-shadow: 3px 3px 10px #0d0d0d, -3px -3px 10px #3d3d3d;
-        }
-        .dark-theme .neumorphic-button {
-            background: #00FFAA;
-            box-shadow: 3px 3px 8px #0d0d0d, -3px -3px 8px #3d3d3d;
-            color: #000000;
-        }
-        .dark-theme .neumorphic-button:hover {
-            box-shadow: 2px 2px 6px #0d0d0d, -2px -2px 6px #3d3d3d;
-        }
-        .dark-theme .neumorphic-button:active {
-            box-shadow: inset 2px 2px 6px #0d0d0d, inset -2px -2px 6px #3d3d3d;
-        }
-        .dark-theme .lightbox-content {
-            background: #2d2d2d;
-            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
-        }
-        .dark-theme .text-gray-700 {
-            color: #A0A0A0;
-        }
-        .dark-theme .bg-white {
-            background: #2d2d2d;
-        }
-        .dark-theme .text-blue-500 {
-            color: #00CCFF;
-        }
-        .dark-theme .text-green-500 {
-            color: #00FFAA;
-        }
-        .dark-theme .text-yellow-500 {
-            color: #FFFF66;
-        }
-        .dark-theme .bg-blue-200 {
-            background: #00CCFF;
-        }
-        .dark-theme .text-blue-700 {
-            color: #000000;
-        }
-        .dark-theme .bg-green-200 {
-            background: #00FFAA;
-        }
-        .dark-theme .text-green-700 {
-            color: #000000;
-        }
-        .dark-theme .bg-yellow-200 {
-            background: #FFFF66;
-        }
-        .dark-theme .text-yellow-700 {
-            color: #000000;
-        }
-        .dark-theme .close-lightbox {
-            color: #00FFAA;
-        }
-        .aurora-theme {
-            background: #0a0a23;
-            color: #E0E0E0;
-        }
-        .aurora-theme .neumorphic {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme .neumorphic:hover {
-            box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5), -3px -3px 10px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme .neumorphic-button {
-            background: #66CCCC;
-            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(80, 80, 100, 0.3);
-            color: #000000;
-        }
-        .aurora-theme .neumorphic-button:hover {
-            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme .neumorphic-button:active {
-            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme .lightbox-content {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme .text-gray-700 {
-            color: #B0B0B0;
-        }
-        .aurora-theme .bg-white {
-            background: rgba(40, 40, 60, 0.7);
-        }
-        .aurora-theme .text-blue-500 {
-            color: #66CCCC;
-        }
-        .aurora-theme .text-green-500 {
-            color: #66FF99;
-        }
-        .aurora-theme .text-yellow-500 {
-            color: #CC99FF;
-        }
-        .aurora-theme .bg-blue-200 {
-            background: #66CCCC;
-        }
-        .aurora-theme .text-blue-700 {
-            color: #000000;
-        }
-        .aurora-theme .bg-green-200 {
-            background: #66FF99;
-        }
-        .aurora-theme .text-green-700 {
-            color: #000000;
-        }
-        .aurora-theme .bg-yellow-200 {
-            background: #CC99FF;
-        }
-        .aurora-theme .text-yellow-700 {
-            color: #000000;
-        }
-        .aurora-theme .close-lightbox {
-            color: #66CCCC;
-        }
-        #auroraCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            display: none;
-        }
-        .aurora-theme #auroraCanvas {
-            display: block;
-        }
-        #particleCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-        }
         /* Header Styles */
         header {
             background: #f0f0f0;
             border-radius: 0 0 15px 15px;
             box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
-            padding: 1rem 2rem;
+            padding: 1rem 1.5rem;
             position: sticky;
             top: 0;
-            z-index: 1000;
-        }
-        .dark-theme header {
-            background: #2d2d2d;
-            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
-        }
-        .aurora-theme header {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+            z-index: 2000;
         }
         nav a {
             margin: 0 1rem;
@@ -239,126 +76,116 @@
         nav a:hover {
             color: #1e90ff;
         }
-        .dark-theme nav a {
-            color: #00FFAA;
-        }
-        .dark-theme nav a:hover {
-            color: #00CCFF;
-        }
-        .aurora-theme nav a {
-            color: #66CCCC;
-        }
-        .aurora-theme nav a:hover {
-            color: #CC99FF;
-        }
-        /* Theme Toggle Styles */
-        #theme-toggle {
-            position: relative;
-            background: #f0f0f0;
-            border-radius: 10px;
-            box-shadow: 3px 3px 8px #e0e0e0, -3px -3px 8px #ffffff;
-            padding: 5px 10px;
+        /* Burger Menu Styles */
+        .burger-menu {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 20px;
             cursor: pointer;
-            color: #333;
-            transition: box-shadow 0.2s ease;
+            z-index: 2002;
         }
-        #theme-toggle:hover {
-            box-shadow: 2px 2px 6px #c0c0c0, -2px -2px 6px #ffffff;
-        }
-        #theme-toggle:active {
-            box-shadow: inset 2px 2px 6px #c0c0c0, inset -2px -2px 6px #ffffff;
-        }
-        #theme-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: #f0f0f0;
-            border-radius: 10px;
-            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
-            padding: 8px;
-            z-index: 1001;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-        }
-        #theme-dropdown.show {
-            max-height: 150px;
-            opacity: 1;
-        }
-        #theme-dropdown button {
-            display: block;
+        .burger-menu span {
             width: 100%;
-            text-align: left;
-            padding: 4px 8px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            color: #333;
-            font-size: 14px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            transition: all 0.3s ease;
         }
-        #theme-dropdown button:hover {
+        .burger-menu.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .burger-menu.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .burger-menu.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+        .mobile-nav {
+            display: none;
+            flex-direction: column;
+            background: #f0f0f0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 75%;
+            height: 100%;
+            padding: 4rem 1rem 1rem;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 2001;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        .mobile-nav.active {
+            display: flex;
+            transform: translateX(0);
+        }
+        .mobile-nav a {
+            padding: 1rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+        .mobile-nav a:hover {
             background: #e0e0e0;
             border-radius: 5px;
         }
-        .dark-theme #theme-toggle {
-            background: #2d2d2d;
-            box-shadow: 3px 3px 8px #0d0d0d, -3px -3px 8px #3d3d3d;
-            color: #00FFAA;
+        .mobile-nav a i {
+            margin-right: 0.5rem;
         }
-        .dark-theme #theme-toggle:hover {
-            box-shadow: 2px 2px 6px #0d0d0d, -2px -2px 6px #3d3d3d;
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
         }
-        .dark-theme #theme-toggle:active {
-            box-shadow: inset 2px 2px 6px #0d0d0d, inset -2px -2px 6px #3d3d3d;
+        .overlay.active {
+            display: block;
         }
-        .dark-theme #theme-dropdown {
-            background: #2d2d2d;
-            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        /* Main Content */
+        main {
+            flex-grow: 1;
+            padding: 1rem;
         }
-        .dark-theme #theme-dropdown button {
-            color: #00FFAA;
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f0f0f0;
+            box-shadow: inset 2px 2px 5px #e0e0e0, inset -2px -2px 5px #ffffff;
+            font-size: 1rem;
+            color: #333;
+            margin-top: 0.5rem;
+            touch-action: manipulation;
         }
-        .dark-theme #theme-dropdown button:hover {
-            background: #3d3d3d;
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
-        .aurora-theme #theme-toggle {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(80, 80, 100, 0.3);
-            color: #66CCCC;
+        label {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 0.25rem;
+            display: block;
         }
-        .aurora-theme #theme-toggle:hover {
-            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme #theme-toggle:active {
-            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme #theme-dropdown {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
-        }
-        .aurora-theme #theme-dropdown button {
-            color: #66CCCC;
-        }
-        .aurora-theme #theme-dropdown button:hover {
-            background: rgba(80, 80, 100, 0.3);
-        }
-        /* Footer Styles */
+        /* Footer */
         footer {
             background: #f0f0f0;
             border-radius: 15px 15px 0 0;
             box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
-            padding: 2rem;
-            margin-top: 2rem;
+            padding: 1.5rem;
             text-align: center;
-        }
-        .dark-theme footer {
-            background: #2d2d2d;
-            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
-        }
-        .aurora-theme footer {
-            background: rgba(40, 40, 60, 0.7);
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+            margin-top: 2rem;
         }
         footer a {
             color: #1e90ff;
@@ -368,96 +195,129 @@
         footer a:hover {
             text-decoration: underline;
         }
-        .dark-theme footer a {
-            color: #00CCFF;
-        }
-        .aurora-theme footer a {
-            color: #66CCCC;
-        }
         /* Responsive Adjustments */
         @media (max-width: 768px) {
-            #theme-toggle {
-                padding: 3px 8px;
-                font-size: 14px;
+            .burger-menu {
+                display: flex;
             }
-            #theme-dropdown {
-                padding: 6px;
+            nav {
+                display: none;
             }
-            #theme-dropdown button {
-                padding: 3px 6px;
-                font-size: 12px;
+            header {
+                padding: 0.75rem 1rem;
             }
-            nav a {
-                margin: 0 0.5rem;
-                font-size: 14px;
+            h1 {
+                font-size: 1.25rem;
             }
-            footer {
+            #map {
+                height: 300px;
+            }
+            .neumorphic {
                 padding: 1rem;
             }
-            footer p, footer a {
-                font-size: 14px;
+            .neumorphic-button {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            input, select, textarea {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            label {
+                font-size: 0.85rem;
+            }
+            h2 {
+                font-size: 1.25rem;
+            }
+            .mobile-nav a {
+                font-size: 1rem;
+                padding: 0.75rem;
             }
         }
         @media (max-width: 480px) {
-            #theme-toggle {
-                padding: 2px 6px;
-                font-size: 12px;
+            .burger-menu {
+                width: 24px;
+                height: 16px;
             }
-            #theme-dropdown {
-                padding: 4px;
+            .burger-menu span {
+                height: 3px;
             }
-            #theme-dropdown button {
-                padding: 2px 4px;
-                font-size: 10px;
+            header {
+                padding: 0.5rem 0.75rem;
             }
-            nav a {
-                margin: 0 0.3rem;
-                font-size: 12px;
+            h1 {
+                font-size: 1rem;
             }
-            footer {
+            #map {
+                height: 250px;
+            }
+            .neumorphic {
+                padding: 0.75rem;
+            }
+            .neumorphic-button {
+                padding: 0.4rem;
+                font-size: 0.85rem;
+            }
+            input, select, textarea {
+                padding: 0.4rem;
+                font-size: 0.85rem;
+            }
+            label {
+                font-size: 0.8rem;
+            }
+            h2 {
+                font-size: 1.1rem;
+            }
+            .mobile-nav {
+                width: 80%;
+            }
+            .mobile-nav a {
+                font-size: 0.9rem;
                 padding: 0.5rem;
             }
             footer p, footer a {
-                font-size: 12px;
+                font-size: 0.85rem;
             }
         }
     </style>
 </head>
-<body class="font-sans min-h-screen flex flex-col">
-    <canvas id="auroraCanvas"></canvas>
-    <canvas id="particleCanvas"></canvas>
+<body>
+    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
     <!-- Header -->
     <header class="neumorphic">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold text-blue-500">Laporan Jalan</h1>
             <div class="flex items-center">
-                <nav>
+                <nav class="hidden md:flex">
                     <a href="#route-section" onclick="scrollToSection('route-section')">Pencarian Rute</a>
                     <a href="#report-section" onclick="scrollToSection('report-section')">Laporan Jalan Rusak</a>
                     <a href="#damage-section" onclick="scrollToSection('damage-section')">Daftar Jalan Rusak</a>
                     <a href="https://yourwebsite.com" target="_blank">About</a>
                 </nav>
-                <div class="relative ml-4">
-                    <div id="theme-toggle" onclick="toggleThemeDropdown(event)">Tema</div>
-                    <div id="theme-dropdown">
-                        <button onclick="setTheme('light', event)">Light</button>
-                        <button onclick="setTheme('dark', event)">Dark</button>
-                        <button onclick="setTheme('aurora', event)">Aurora</button>
-                    </div>
+                <div class="burger-menu md:hidden" onclick="toggleBurgerMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="mobile-nav md:hidden">
+                    <a href="#route-section" onclick="scrollToSection('route-section')"><i class="fas fa-map-signs"></i> Pencarian Rute</a>
+                    <a href="#report-section" onclick="scrollToSection('report-section')"><i class="fas fa-exclamation-triangle"></i> Laporan Jalan Rusak</a>
+                    <a href="#damage-section" onclick="scrollToSection('damage-section')"><i class="fas fa-road"></i> Daftar Jalan Rusak</a>
+                    <a href="https://yourwebsite.com" target="_blank"><i class="fas fa-info-circle"></i> About</a>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto p-4 flex-grow">
-        <div id="route-section" class="neumorphic">
+    <main class="container mx-auto flex-grow">
+        <div id="route-section" class="neumorphic mb-4">
             <h2 class="text-xl font-bold mb-4 text-blue-500">Pencarian Rute</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 gap-4">
                 <div>
-                    <label for="start" class="block text-sm font-medium text-gray-700">Lokasi Awal:</label>
-                    <select id="start" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="start">Lokasi Awal:</label>
+                    <select id="start">
                         <option value="">Pilih Lokasi Awal</option>
                         <option value="0">Alun-Alun Gresik</option>
                         <option value="1">Masjid Agung Gresik</option>
@@ -472,8 +332,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="end" class="block text-sm font-medium text-gray-700">Lokasi Akhir:</label>
-                    <select id="end" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="end">Lokasi Akhir:</label>
+                    <select id="end">
                         <option value="">Pilih Lokasi Akhir</option>
                         <option value="0">Alun-Alun Gresik</option>
                         <option value="1">Masjid Agung Gresik</option>
@@ -488,87 +348,83 @@
                     </select>
                 </div>
                 <div>
-                    <label for="transport" class="block text-sm font-medium text-gray-700">Moda Transportasi:</label>
-                    <select id="transport" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="transport">Moda Transportasi:</label>
+                    <select id="transport">
                         <option value="foot-walking">Jalan Kaki</option>
                         <option value="driving-motorcycle">Sepeda Motor</option>
                         <option value="driving-car">Mobil</option>
-                        <option value="aircraft">Pesawat</option>
-                        <option value="helicopter">Helikopter</option>
-                        <option value="driving-ojek">Ojek Online</option>
-                        <option value="teleport">Teleport</option>
                     </select>
                 </div>
-                <div class="flex items-end">
+                <div>
                     <button onclick="calculateRoutes()" class="w-full neumorphic-button bg-blue-200 text-blue-700">Tampilkan Rute</button>
                 </div>
             </div>
         </div>
 
-        <div id="map" class="neumorphic mb-4"></div>
-        <div id="route-info" class="neumorphic p-6 mb-4"></div>
+        <div id="map"></div>
+        <div id="route-info" class="neumorphic p-4 mb-4"></div>
 
-        <div id="report-section" class="neumorphic">
+        <div id="report-section" class="neumorphic mb-4">
             <h2 class="text-xl font-bold mb-4 text-green-500">Laporkan Jalan Rusak</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 gap-4">
                 <div>
-                    <label for="location-name" class="block text-sm font-medium text-gray-700">Nama Lokasi:</label>
-                    <input type="text" id="location-name" placeholder="Nama Lokasi" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="location-name">Nama Lokasi:</label>
+                    <input type="text" id="location-name" placeholder="Nama Lokasi">
                 </div>
                 <div>
-                    <label for="latitude" class="block text-sm font-medium text-gray-700">Latitude:</label>
-                    <input type="text" id="latitude" placeholder="Latitude" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="latitude">Latitude:</label>
+                    <input type="text" id="latitude" placeholder="Latitude">
                 </div>
                 <div>
-                    <label for="longitude" class="block text-sm font-medium text-gray-700">Longitude:</label>
-                    <input type="text" id="longitude" placeholder="Longitude" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="longitude">Longitude:</label>
+                    <input type="text" id="longitude" placeholder="Longitude">
                 </div>
                 <div>
-                    <label for="severity" class="block text-sm font-medium text-gray-700">Keparahan (1-10):</label>
-                    <input type="number" id="severity" placeholder="Keparahan (1-10)" min="1" max="10" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="severity">Keparahan (1-10):</label>
+                    <input type="number" id="severity" placeholder="Keparahan (1-10)" min="1" max="10">
                 </div>
                 <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700">Status:</label>
-                    <select id="status" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="status">Status:</label>
+                    <select id="status">
                         <option value="Belum Diperbaiki">Belum Diperbaiki</option>
                         <option value="Dalam Penggerejaan">Dalam Penggerejaan</option>
                         <option value="Sudah Diperbaiki">Sudah Diperbaiki</option>
                     </select>
                 </div>
                 <div>
-                    <label for="progress" class="block text-sm font-medium text-gray-700">Progress (%):</label>
-                    <input type="number" id="progress" placeholder="Progress (0-100)" min="0" max="100" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <label for="progress">Progress (%):</label>
+                    <input type="number" id="progress" placeholder="Progress (0-100)" min="0" max="100">
                 </div>
-                <div class="md:col-span-3">
-                    <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi:</label>
-                    <textarea id="description" placeholder="Deskripsi" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic"></textarea>
+                <div>
+                    <label for="description">Deskripsi:</label>
+                    <textarea id="description" placeholder="Deskripsi"></textarea>
                 </div>
-                <div class="md:col-span-3">
-                    <label for="comment" class="block text-sm font-medium text-gray-700">Komentar (Opsional):</label>
-                    <textarea id="comment" placeholder="Tambah Komentar (Opsional)" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic"></textarea>
+                <div>
+                    <label for="comment">Komentar (Opsional):</label>
+                    <textarea id="comment" placeholder="Tambah Komentar (Opsional)"></textarea>
                 </div>
-                <div class="md:col-span-3">
-                    <label for="file-upload" class="block text-sm font-medium text-gray-700">Unggah Gambar (Opsional):</label>
-                    <input type="file" id="file-upload" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                <div>
+                    <label for="file-upload">Unggah Gambar (Opsional):</label>
+                    <input type="file" id="file-upload">
                 </div>
-                <div class="md:col-span-3">
-                    <button id="submit-report" onclick="submitReport()" class="w-full neumorphic-button bg-green-200 text-green-700">Kirim Laporan</button>
+                <div>
+                    <button onclick="submitReport()" class="w-full neumorphic-button bg-green-200 text-green-700">Kirim Laporan</button>
                 </div>
             </div>
         </div>
 
-        <div id="damage-section" class="neumorphic">
+        <div id="damage-section" class="neumorphic mb-4">
             <h2 class="text-xl font-bold mb-4 text-yellow-500">Daftar Jalan Rusak</h2>
-            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                <input type="text" id="search-location" placeholder="Cari Lokasi" class="p-2 border rounded-md bg-white text-gray-700 neumorphic flex-1" onkeyup="filterDamageReports()">
-                <select id="filter-status" onchange="filterDamageReports()" class="p-2 border rounded-md bg-white text-gray-700 neumorphic">
+            <div class="flex flex-col gap-4 mb-4">
+                <input type="text" id="search-location" placeholder="Cari Lokasi" onkeyup="filterDamageReports()">
+                <select id="filter-status" onchange="filterDamageReports()">
                     <option value="Semua Status">Semua Status</option>
                     <option value="Belum Diperbaiki">Belum Diperbaiki</option>
                     <option value="Dalam Penggerejaan">Dalam Penggerejaan</option>
                     <option value="Sudah Diperbaiki">Sudah Diperbaiki</option>
                 </select>
             </div>
-            <div id="damage-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div id="damage-list" class="grid grid-cols-1 gap-4"></div>
             <div class="marker-legend mt-4 text-sm">
                 <span>Legenda Marker: </span>
                 <span style="color: green;">1-3 (Rendah)</span>
@@ -590,22 +446,6 @@
             </p>
         </div>
     </footer>
-
-    <!-- Lightbox untuk Anggaran -->
-    <div id="budget-lightbox" class="lightbox" onclick="closeLightbox(event)">
-        <div class="lightbox-content" onclick="event.stopPropagation();">
-            <span class="close-lightbox" onclick="closeLightbox()">×</span>
-            <h3 class="text-lg font-bold mb-2 text-blue-500">Detail Anggaran Perbaikan</h3>
-            <div id="budget-details"></div>
-            <button id="donate-button" class="mt-4 neumorphic-button bg-yellow-200 text-yellow-700">Sumbangan</button>
-            <div id="donation-form" class="mt-4 hidden">
-                <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="mx-auto mb-2">
-                <p class="text-sm">Nomor Rekening: <strong>1234-5678-9012-3456</strong> (Bank XYZ)</p>
-                <input type="number" id="donation-amount" placeholder="Masukkan Nominal (IDR)" class="mt-2 p-2 border rounded-md w-full bg-white text-gray-700 neumorphic">
-                <button onclick="submitDonation()" class="mt-2 neumorphic-button bg-green-200 text-green-700">Kirim</button>
-            </div>
-        </div>
-    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
@@ -661,141 +501,47 @@
         let damageMarkers = [];
         let lastRouteRequest = null;
 
-        // Animasi Aurora (versi ringan)
-        let auroraAnimationId = null;
-        const auroraCanvas = document.getElementById('auroraCanvas');
-        const auroraCtx = auroraCanvas.getContext('2d');
-        let auroraWaves = [];
-
-        function initializeAurora() {
-            auroraCanvas.width = window.innerWidth;
-            auroraCanvas.height = window.innerHeight;
-
-            auroraWaves = [];
-            for (let i = 0; i < 3; i++) {
-                auroraWaves.push({
-                    offset: Math.random() * 500,
-                    speed: 0.01 + Math.random() * 0.02,
-                    amplitude: 30 + Math.random() * 50,
-                    frequency: 0.001 + Math.random() * 0.002,
-                    colors: [
-                        `rgba(0, 255, 150, 0.1)`,
-                        `rgba(150, 0, 255, 0.1)`,
-                        `rgba(0, 150, 255, 0.1)`
-                    ]
-                });
-            }
-
-            animateAurora();
-        }
-
-        function animateAurora() {
-            auroraCtx.clearRect(0, 0, auroraCanvas.width, auroraCanvas.height);
-
-            auroraWaves.forEach(wave => {
-                wave.offset += wave.speed;
-
-                for (let x = 0; x < auroraCanvas.width; x += 5) {
-                    const y = auroraCanvas.height * 0.6 + Math.sin(x * wave.frequency + wave.offset) * wave.amplitude;
-                    const gradient = auroraCtx.createLinearGradient(0, y - 50, 0, y + 50);
-                    gradient.addColorStop(0, wave.colors[0]);
-                    gradient.addColorStop(0.5, wave.colors[1]);
-                    gradient.addColorStop(1, wave.colors[2]);
-
-                    auroraCtx.fillStyle = gradient;
-                    auroraCtx.fillRect(x, y - 50, 5, 100);
-                }
-            });
-
-            auroraAnimationId = requestAnimationFrame(animateAurora);
-        }
-
-        function stopAuroraAnimation() {
-            if (auroraAnimationId) {
-                cancelAnimationFrame(auroraAnimationId);
-                auroraAnimationId = null;
-            }
-            auroraCtx.clearRect(0, 0, auroraCanvas.width, auroraCanvas.height);
-        }
-
-        // Animasi Partikel
-        const particleCanvas = document.getElementById('particleCanvas');
-        const particleCtx = particleCanvas.getContext('2d');
-        let particles = [];
-        let particleAnimationId = null;
-
-        function initializeParticles() {
-            particleCanvas.width = window.innerWidth;
-            particleCanvas.height = window.innerHeight;
-
-            particles = [];
-            for (let i = 0; i < 50; i++) {
-                particles.push({
-                    x: Math.random() * particleCanvas.width,
-                    y: Math.random() * particleCanvas.height,
-                    radius: Math.random() * 3 + 1,
-                    speedX: (Math.random() - 0.5) * 2,
-                    speedY: (Math.random() - 0.5) * 2,
-                    color: getParticleColor()
-                });
-            }
-
-            animateParticles();
-        }
-
-        function getParticleColor() {
-            const theme = document.body.classList.contains('dark-theme') ? 'dark' :
-                         document.body.classList.contains('aurora-theme') ? 'aurora' : 'light';
-            switch (theme) {
-                case 'dark':
-                    return `rgba(0, 255, 170, ${Math.random() * 0.5 + 0.3})`;
-                case 'aurora':
-                    return `rgba(${Math.random() * 255}, ${Math.random() * 255}, 255, ${Math.random() * 0.5 + 0.3})`;
-                default:
-                    return `rgba(150, 150, 150, ${Math.random() * 0.5 + 0.3})`;
-            }
-        }
-
-        function animateParticles() {
-            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-
-            particles.forEach(particle => {
-                particle.x += particle.speedX;
-                particle.y += particle.speedY;
-
-                if (particle.x < 0 || particle.x > particleCanvas.width) particle.speedX *= -1;
-                if (particle.y < 0 || particle.y > particleCanvas.height) particle.speedY *= -1;
-
-                particleCtx.beginPath();
-                particleCtx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-                particleCtx.fillStyle = particle.color;
-                particleCtx.fill();
-            });
-
-            particleAnimationId = requestAnimationFrame(animateParticles);
-        }
-
-        window.addEventListener('resize', () => {
-            auroraCanvas.width = window.innerWidth;
-            auroraCanvas.height = window.innerHeight;
-            particleCanvas.width = window.innerWidth;
-            particleCanvas.height = window.innerHeight;
-            if (document.body.classList.contains('aurora-theme')) {
-                initializeAurora();
-            }
-            initializeParticles();
-        });
-
         // Fungsi untuk scroll halus ke section
         function scrollToSection(sectionId) {
             event.preventDefault();
             const section = document.getElementById(sectionId);
             if (section) {
                 section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                closeMenu();
             }
         }
 
-        // Fungsi untuk menghitung jarak garis lurus (untuk pesawat/helikopter)
+        // Fungsi untuk toggle burger menu
+        function toggleBurgerMenu() {
+            const burgerMenu = document.querySelector('.burger-menu');
+            const mobileNav = document.querySelector('.mobile-nav');
+            const overlay = document.getElementById('overlay');
+            burgerMenu.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        function closeMenu() {
+            const burgerMenu = document.querySelector('.burger-menu');
+            const mobileNav = document.querySelector('.mobile-nav');
+            const overlay = document.getElementById('overlay');
+            if (mobileNav.classList.contains('active')) {
+                burgerMenu.classList.remove('active');
+                mobileNav.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+        }
+
+        document.addEventListener('click', (event) => {
+            const burgerMenu = document.querySelector('.burger-menu');
+            const mobileNav = document.querySelector('.mobile-nav');
+            const overlay = document.getElementById('overlay');
+            if (!burgerMenu.contains(event.target) && !mobileNav.contains(event.target) && mobileNav.classList.contains('active')) {
+                closeMenu();
+            }
+        });
+
+        // Fungsi untuk menghitung jarak garis lurus
         function calculateStraightDistance(start, end) {
             const R = 6371;
             const dLat = (end.lat - start.lat) * Math.PI / 180;
@@ -852,55 +598,6 @@
                 .addTo(map)
                 .bindPopup(locations[end].name);
 
-            if (transport === 'teleport') {
-                const distance = calculateStraightDistance(locations[start], locations[end]);
-                routeInfo.innerHTML = `
-                    <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic">
-                        <h3 class="text-lg font-semibold text-blue-500">Teleportasi</h3>
-                        <p><strong>Jarak:</strong> ${distance} km (garis lurus)</p>
-                        <p><strong>Perkiraan Waktu:</strong> 0 menit</p>
-                        <p><strong>Jalur:</strong> Tidak ada (langsung sampai)</p>
-                        <p><strong>Jenis Jalan:</strong> Tidak ada</p>
-                        <p><strong>Deskripsi:</strong> Langsung sampai dari ${locations[start].name} ke ${locations[end].name} tanpa perjalanan.</p>
-                        <p><strong>Komentar:</strong> Teknologi teleportasi canggih diperlukan. Pastikan fasilitas teleportasi tersedia.</p>
-                    </div>
-                `;
-                map.fitBounds(L.latLngBounds([
-                    [locations[start].lat, locations[start].lon],
-                    [locations[end].lat, locations[end].lon]
-                ]));
-                return;
-            }
-
-            if (transport === 'aircraft' || transport === 'helicopter') {
-                const distance = calculateStraightDistance(locations[start], locations[end]);
-                const speed = transport === 'aircraft' ? 800 : 200;
-                const time = (distance / speed * 60).toFixed(1);
-                const routeCoords = [
-                    [locations[start].lat, locations[start].lon],
-                    [locations[end].lat, locations[end].lon]
-                ];
-                const polyline = L.polyline(routeCoords, { color: transport === 'aircraft' ? 'cyan' : 'yellow', weight: 5, opacity: 0.5 }).addTo(map);
-                routePolylines.push(polyline);
-
-                routeInfo.innerHTML = `
-                    <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic" onclick="focusRoute(0)">
-                        <h3 class="text-lg font-semibold" style="color: ${transport === 'aircraft' ? 'cyan' : 'yellow'}">${transport === 'aircraft' ? 'Pesawat' : 'Helikopter'}</h3>
-                        <p><strong>Jarak:</strong> ${distance} km (garis lurus)</p>
-                        <p><strong>Perkiraan Waktu:</strong> ${time} menit</p>
-                        <p><strong>Jalur:</strong> Garis lurus di udara</p>
-                        <p><strong>Jenis Jalan:</strong> Tidak ada (perjalanan udara)</p>
-                        <p><strong>Deskripsi:</strong> Perjalanan udara dari ${locations[start].name} ke ${locations[end].name} dengan ${transport === 'aircraft' ? 'pesawat' : 'helikopter'}, tercepat tanpa mengikuti jalan darat.</p>
-                        <p><strong>Komentar:</strong> ${transport === 'aircraft' ? 'Memerlukan bandara untuk lepas landas dan mendarat.' : 'Cocok untuk jarak pendek, memerlukan helipad.'}</p>
-                    </div>
-                `;
-                map.fitBounds(L.latLngBounds([
-                    [locations[start].lat, locations[start].lon],
-                    [locations[end].lat, locations[end].lon]
-                ]));
-                return;
-            }
-
             const apiKey = '5b3ce3597851110001cf6248653155f0cf554874892f069c8a981df6';
             const profile = transport === 'foot-walking' ? 'foot-walking' : 'driving-car';
             const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
@@ -913,9 +610,7 @@
                 const routeRequests = [
                     { name: 'Rute Terpendek', color: 'blue', preference: 'shortest', options: {} },
                     { name: 'Rute Tercepat', color: 'red', preference: 'fastest', options: {} },
-                    { name: 'Rute Alternatif 1', color: 'green', preference: 'recommended', options: { avoid_features: ['highways'] } },
-                    { name: 'Rute Alternatif 2', color: 'orange', preference: 'recommended', options: { avoid_features: ['residential'] } },
-                    { name: 'Rute Alternatif 3', color: 'purple', preference: 'recommended', options: { avoid_features: ['primary', 'secondary'] } }
+                    { name: 'Rute Alternatif', color: 'green', preference: 'recommended', options: { avoid_features: ['highways'] } }
                 ];
 
                 const routeResponses = [];
@@ -982,39 +677,31 @@
                     if (transport === 'foot-walking') {
                         roadDescription = steps !== 'Tidak tersedia' ? 'Trotoar dan jalan setapak' : 'Tidak tersedia';
                         description = route.name === 'Rute Terpendek'
-                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan setapak'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
+                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan setapak'}, dan tiba di ${locations[end].name}.`
                             : route.name === 'Rute Tercepat'
-                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan setapak'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
-                            : `Berjalan kaki dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk perjalanan santai.`;
-                        comment = 'Cocok untuk olahraga atau perjalanan santai. Pastikan ada trotoar yang aman.';
+                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan setapak'}, dan sampai di ${locations[end].name}.`
+                            : `Berjalan kaki dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}.`;
+                        comment = 'Cocok untuk olahraga atau perjalanan santai.';
                     } else if (transport === 'driving-motorcycle') {
                         roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan kecil' : 'Tidak tersedia';
                         description = route.name === 'Rute Terpendek'
-                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
+                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}.`
                             : route.name === 'Rute Tercepat'
-                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
-                            : `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk menghindari kemacetan.`;
-                        comment = 'Perhatikan aturan lalu lintas dan keselamatan berkendara.';
-                    } else if (transport === 'driving-ojek') {
-                        roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan kecil' : 'Tidak tersedia';
-                        description = route.name === 'Rute Terpendek'
-                            ? `Menggunakan ojek online dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
-                            : route.name === 'Rute Tercepat'
-                            ? `Menggunakan ojek online dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
-                            : `Menggunakan ojek online dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk menghindari kemacetan.`;
-                        comment = 'Praktis untuk perjalanan cepat. Pastikan memesan ojek online terpercaya.';
+                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name}.`
+                            : `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}.`;
+                        comment = 'Perhatikan keselamatan berkendara.';
                     } else {
                         roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan lokal' : 'Tidak tersedia';
                         description = route.name === 'Rute Terpendek'
-                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan efisiensi jarak yang optimal.`
+                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}.`
                             : route.name === 'Rute Tercepat'
-                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
-                            : `Mengendarai mobil dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk perjalanan santai.`;
-                        comment = 'Pastikan kondisi mobil baik dan perhatikan rambu lalu lintas.';
+                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name}.`
+                            : `Mengendarai mobil dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}.`;
+                        comment = 'Perhatikan rambu lalu lintas.';
                     }
 
                     routeInfo.innerHTML += `
-                        <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic" onclick="focusRoute(${index})">
+                        <div class="route-desc p-4 border rounded-md bg-white neumorphic" onclick="focusRoute(${index})">
                             <h3 class="text-lg font-semibold" style="color: ${route.color}">${route.name}</h3>
                             <p><strong>Jarak:</strong> ${distance} km</p>
                             <p><strong>Perkiraan Waktu:</strong> ${time} menit</p>
@@ -1032,7 +719,7 @@
                 ]);
                 map.fitBounds(bounds);
             } catch (error) {
-                routeInfo.innerHTML = `<p class="error">Gagal mengambil rute: ${error.message}. Periksa API key atau koneksi internet.</p>`;
+                routeInfo.innerHTML = `<p class="error">Gagal mengambil rute: ${error.message}.</p>`;
                 console.error('Error:', error.response ? error.response.data : error);
             }
         }
@@ -1047,16 +734,9 @@
         }
 
         let damageReports = [
-            { name: "Jalan Utama Gresik", lat: -7.156907, lon: 112.656205, severity: 3, description: "Jalan retak ringan", status: "Belum Diperbaiki", progress: 0, comment: "Perlu perhatian awal", file: "https://via.placeholder.com/150?text=Retak+Ringan", budget: { total: 5000000, source: "Dana Desa", details: "Biaya material dan tenaga kerja." } },
-            { name: "Jalan Pelabuhan", lat: -7.143500, lon: 112.655000, severity: 6, description: "Jalan berlubang sedang", status: "Dalam Penggerejaan", progress: 50, comment: "Sedang diperbaiki", file: "https://via.placeholder.com/150?text=Berlubang+Sedang", budget: { total: 15000000, source: "APBD", details: "Perbaikan aspal dan drainase." } },
-            { name: "Jalan Pasar", lat: -7.157500, lon: 112.654000, severity: 9, description: "Jalan rusak parah", status: "Belum Diperbaiki", progress: 0, comment: "Butuh perbaikan mendesak", file: "https://via.placeholder.com/150?text=Rusak+Parah", budget: { total: 30000000, source: "APBN", details: "Rekonstruksi jalan total." } },
-            { name: "Jalan Taman Kota", lat: -7.160800, lon: 112.652500, severity: 2, description: "Jalan retak kecil", status: "Sudah Diperbaiki", progress: 100, comment: "Selesai perbaikan", file: "https://via.placeholder.com/150?text=Retak+Kecil", budget: { total: 2000000, source: "Dana Desa", details: "Perbaikan minor." } },
-            { name: "Jalan Stasiun", lat: -7.156500, lon: 112.648000, severity: 4, description: "Jalan berlubang ringan", status: "Belum Diperbaiki", progress: 0, comment: "Perlu inspeksi", file: "https://via.placeholder.com/150?text=Berlubang+Ringan", budget: { total: 8000000, source: "APBD", details: "Perbaikan aspal." } },
-            { name: "Jalan Universitas", lat: -7.174500, lon: 112.628000, severity: 7, description: "Jalan banjir", status: "Dalam Penggerejaan", progress: 70, comment: "Menunggu drainase", file: "https://via.placeholder.com/150?text=Banjir", budget: { total: 20000000, source: "APBN", details: "Pembangunan drainase dan aspal." } },
-            { name: "Jalan RSUD", lat: -7.165000, lon: 112.642500, severity: 1, description: "Jalan mulus dengan retak kecil", status: "Sudah Diperbaiki", progress: 100, comment: "Perbaikan minor", file: "https://via.placeholder.com/150?text=Retak+Kecil", budget: { total: 1000000, source: "Dana Desa", details: "Tambal sulam." } },
-            { name: "Jalan Terminal", lat: -7.152000, lon: 112.660000, severity: 8, description: "Jalan rusak berat", status: "Belum Diperbaiki", progress: 0, comment: "Butuh perhatian serius", file: "https://via.placeholder.com/150?text=Rusak+Berat", budget: { total: 25000000, source: "APBN", details: "Rekonstruksi jalan." } },
-            { name: "Jalan Makam", lat: -7.139000, lon: 112.632500, severity: 5, description: "Jalan berlubang sedang", status: "Dalam Penggerejaan", progress: 30, comment: "Proses perbaikan", file: "https://via.placeholder.com/150?text=Berlubang+Sedang", budget: { total: 12000000, source: "APBD", details: "Perbaikan aspal." } },
-            { name: "Jalan Politeknik", lat: -7.167843, lon: 112.641869, severity: 10, description: "Jalan rusak total", status: "Belum Diperbaiki", progress: 0, comment: "Perbaikan darurat", file: "https://via.placeholder.com/150?text=Rusak+Total", budget: { total: 40000000, source: "APBN", details: "Rekonstruksi jalan total." } }
+            { name: "Jalan Utama Gresik", lat: -7.156907, lon: 112.656205, severity: 3, description: "Jalan retak ringan", status: "Belum Diperbaiki", progress: 0, comment: "Perlu perhatian awal" },
+            { name: "Jalan Pelabuhan", lat: -7.143500, lon: 112.655000, severity: 6, description: "Jalan berlubang sedang", status: "Dalam Penggerejaan", progress: 50, comment: "Sedang diperbaiki" },
+            { name: "Jalan Pasar", lat: -7.157500, lon: 112.654000, severity: 9, description: "Jalan rusak parah", status: "Belum Diperbaiki", progress: 0, comment: "Butuh perbaikan mendesak" }
         ];
 
         function displayDamageReports() {
@@ -1072,21 +752,15 @@
                 if (filterStatus !== "Semua Status" && report.status !== filterStatus) return;
 
                 const div = document.createElement('div');
-                div.className = 'damage-item p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic';
+                div.className = 'damage-item p-4 border rounded-md bg-white neumorphic';
                 div.innerHTML = `
                     <h3 class="text-lg font-semibold text-blue-500">${report.name} (Keparahan: ${report.severity})</h3>
                     <p><strong>Status:</strong> ${report.status}</p>
                     <p><strong>Progress:</strong> ${report.progress}%</p>
                     <p><strong>Deskripsi:</strong> ${report.description}</p>
                     <p><strong>Komentar:</strong> ${report.comment || 'Tidak ada komentar'}</p>
-                    <div class="mt-2 flex gap-2">
-                        <button onclick="completeReport(${index})" class="neumorphic-button bg-green-200 text-green-700">Selesai</button>
-                        <button onclick="showBudget(${index})" class="neumorphic-button bg-yellow-200 text-yellow-700">Anggaran</button>
-                    </div>
                 `;
-                div.onclick = (e) => {
-                    if (e.target.tagName !== 'BUTTON') showDamageOnMap(index);
-                };
+                div.onclick = () => showDamageOnMap(index);
                 damageList.appendChild(div);
             });
 
@@ -1107,9 +781,7 @@
                         Keparahan: ${report.severity}<br>
                         Deskripsi: ${report.description}<br>
                         Status: ${report.status}<br>
-                        Progress: ${report.progress}%<br>
-                        ${report.file ? `<img src="${report.file}" alt="Gambar Jalan Rusak" style="width: 100%; margin-top: 5px;" />` : 'Tidak ada gambar'}<br>
-                        ${report.progress >= 100 ? `<button onclick="completeReport(${index})" style="margin-top: 5px; background-color: green; color: white; padding: 5px; border: none; border-radius: 3px; cursor: pointer;">Selesai Diperbaiki</button>` : ''}
+                        Progress: ${report.progress}%
                     </div>
                 `;
                 marker.bindPopup(popupContent);
@@ -1128,49 +800,6 @@
             }
         }
 
-        window.completeReport = function(index) {
-            damageReports[index].progress = 100;
-            damageReports = damageReports.filter(report => report.progress < 100);
-            displayDamageReports();
-        };
-
-        window.showBudget = function(index) {
-            const report = damageReports.filter(r => r.progress < 100)[index];
-            if (!report) return;
-
-            const budget = report.budget;
-            const budgetDetails = document.getElementById('budget-details');
-            budgetDetails.innerHTML = `
-                <p><strong>Total Anggaran:</strong> Rp ${budget.total.toLocaleString()}</p>
-                <p><strong>Sumber Dana:</strong> ${budget.source}</p>
-                <p><strong>Rincian:</strong> ${budget.details}</p>
-            `;
-            document.getElementById('budget-lightbox').style.display = 'flex';
-            document.getElementById('donation-form').classList.add('hidden');
-
-            const donateButton = document.getElementById('donate-button');
-            donateButton.onclick = () => {
-                document.getElementById('donation-form').classList.toggle('hidden');
-            };
-        };
-
-        window.closeLightbox = function(event) {
-            if (event.target === document.getElementById('budget-lightbox')) {
-                document.getElementById('budget-lightbox').style.display = 'none';
-                document.getElementById('donation-form').classList.add('hidden');
-            }
-        };
-
-        window.submitDonation = function() {
-            const amount = document.getElementById('donation-amount').value;
-            if (!amount || amount <= 0) {
-                alert('Masukkan nominal sumbangan yang valid!');
-                return;
-            }
-            alert(`Terima kasih! Sumbangan sebesar Rp ${amount} telah diterima.`);
-            closeLightbox();
-        };
-
         function submitReport() {
             const name = document.getElementById('location-name').value;
             const lat = parseFloat(document.getElementById('latitude').value);
@@ -1180,7 +809,6 @@
             const status = document.getElementById('status').value;
             const progress = parseInt(document.getElementById('progress').value) || 0;
             const comment = document.getElementById('comment').value;
-            const file = document.getElementById('file-upload').files[0];
 
             if (!name || isNaN(lat) || isNaN(lon) || isNaN(severity) || !description || severity < 1 || severity > 10 || progress < 0 || progress > 100) {
                 alert('Mohon lengkapi semua field dengan benar! Keparahan harus antara 1-10, dan progress antara 0-100.');
@@ -1195,9 +823,7 @@
                 description,
                 status,
                 progress,
-                comment,
-                file: file ? URL.createObjectURL(file) : null,
-                budget: { total: 10000000, source: "APBD", details: "Perbaikan aspal dan trotoar." }
+                comment
             };
             damageReports.push(newReport);
 
@@ -1219,53 +845,8 @@
             displayDamageReports();
         }
 
-        function toggleThemeDropdown(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const dropdown = document.getElementById('theme-dropdown');
-            if (dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-            } else {
-                dropdown.classList.add('show');
-            }
-        }
-
-        function setTheme(theme, event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const body = document.body;
-
-            body.classList.remove('dark-theme', 'light-theme', 'aurora-theme');
-            
-            if (theme === 'dark') {
-                body.classList.add('dark-theme');
-                stopAuroraAnimation();
-            } else if (theme === 'aurora') {
-                body.classList.add('aurora-theme');
-                initializeAurora();
-            } else {
-                body.classList.add('light-theme');
-                stopAuroraAnimation();
-            }
-
-            particles.forEach(particle => {
-                particle.color = getParticleColor();
-            });
-
-            document.getElementById('theme-dropdown').classList.remove('show');
-        }
-
-        document.addEventListener('click', (event) => {
-            const dropdown = document.getElementById('theme-dropdown');
-            const toggle = document.getElementById('theme-toggle');
-            if (!toggle.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
-
+        // Inisialisasi daftar laporan jalan rusak
         displayDamageReports();
-        initializeParticles();
-        setTheme('light');
     </script>
 </body>
 </html>
