@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Planner Gresik - Laporan Jalan Rusak</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #map { height: 600px; width: 100%; border-radius: 15px; box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff; }
+        .error { color: red; }
+        .damage-item { cursor: pointer; }
+        .marker-legend span { margin-right: 10px; }
+        .neumorphic {
+            background: #f0f0f0;
+            border-radius: 15px;
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .neumorphic:hover {
+            box-shadow: 3px 3px 10px #c0c0c0, -3px -3px 10px #ffffff;
+        }
+        .neumorphic-button {
+            background: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 3px 3px 8px #e0e0e0, -3px -3px 8px #ffffff;
+            padding: 8px 16px;
+            border: none;
+            cursor: pointer;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        .neumorphic-button:hover {
+            box-shadow: 2px 2px 6px #c0c0c0, -2px -2px 6px #ffffff;
+        }
+        .neumorphic-button:active {
+            box-shadow: inset 2px 2px 6px #c0c0c0, inset -2px -2px 6px #ffffff;
+        }
+        .lightbox { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.8); 
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .lightbox-content { 
+            background: #f0f0f0;
+            border-radius: 15px;
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+        .close-lightbox { 
+            position: absolute; 
+            top: 10px; 
+            right: 20px; 
+            font-size: 24px; 
+            cursor: pointer; 
+            color: #333;
+        }
+        .dark-theme {
+            background: #1a1a1a;
+            color: #00FFAA;
+        }
+        .dark-theme .neumorphic {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        }
+        .dark-theme .neumorphic:hover {
+            box-shadow: 3px 3px 10px #0d0d0d, -3px -3px 10px #3d3d3d;
+        }
+        .dark-theme .neumorphic-button {
+            background: #00FFAA;
+            box-shadow: 3px 3px 8px #0d0d0d, -3px -3px 8px #3d3d3d;
+            color: #000000;
+        }
+        .dark-theme .neumorphic-button:hover {
+            box-shadow: 2px 2px 6px #0d0d0d, -2px -2px 6px #3d3d3d;
+        }
+        .dark-theme .neumorphic-button:active {
+            box-shadow: inset 2px 2px 6px #0d0d0d, inset -2px -2px 6px #3d3d3d;
+        }
+        .dark-theme .lightbox-content {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        }
+        .dark-theme .text-gray-700 {
+            color: #A0A0A0;
+        }
+        .dark-theme .bg-white {
+            background: #2d2d2d;
+        }
+        .dark-theme .text-blue-500 {
+            color: #00CCFF;
+        }
+        .dark-theme .text-green-500 {
+            color: #00FFAA;
+        }
+        .dark-theme .text-yellow-500 {
+            color: #FFFF66;
+        }
+        .dark-theme .bg-blue-200 {
+            background: #00CCFF;
+        }
+        .dark-theme .text-blue-700 {
+            color: #000000;
+        }
+        .dark-theme .bg-green-200 {
+            background: #00FFAA;
+        }
+        .dark-theme .text-green-700 {
+            color: #000000;
+        }
+        .dark-theme .bg-yellow-200 {
+            background: #FFFF66;
+        }
+        .dark-theme .text-yellow-700 {
+            color: #000000;
+        }
+        .dark-theme .close-lightbox {
+            color: #00FFAA;
+        }
+        .aurora-theme {
+            background: #0a0a23;
+            color: #E0E0E0;
+        }
+        .aurora-theme .neumorphic {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme .neumorphic:hover {
+            box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5), -3px -3px 10px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme .neumorphic-button {
+            background: #66CCCC;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(80, 80, 100, 0.3);
+            color: #000000;
+        }
+        .aurora-theme .neumorphic-button:hover {
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme .neumorphic-button:active {
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme .lightbox-content {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme .text-gray-700 {
+            color: #B0B0B0;
+        }
+        .aurora-theme .bg-white {
+            background: rgba(40, 40, 60, 0.7);
+        }
+        .aurora-theme .text-blue-500 {
+            color: #66CCCC;
+        }
+        .aurora-theme .text-green-500 {
+            color: #66FF99;
+        }
+        .aurora-theme .text-yellow-500 {
+            color: #CC99FF;
+        }
+        .aurora-theme .bg-blue-200 {
+            background: #66CCCC;
+        }
+        .aurora-theme .text-blue-700 {
+            color: #000000;
+        }
+        .aurora-theme .bg-green-200 {
+            background: #66FF99;
+        }
+        .aurora-theme .text-green-700 {
+            color: #000000;
+        }
+        .aurora-theme .bg-yellow-200 {
+            background: #CC99FF;
+        }
+        .aurora-theme .text-yellow-700 {
+            color: #000000;
+        }
+        .aurora-theme .close-lightbox {
+            color: #66CCCC;
+        }
+        #auroraCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            display: none;
+        }
+        .aurora-theme #auroraCanvas {
+            display: block;
+        }
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+        /* Header Styles */
+        header {
+            background: #f0f0f0;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .dark-theme header {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        }
+        .aurora-theme header {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+        }
+        nav a {
+            margin: 0 1rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        nav a:hover {
+            color: #1e90ff;
+        }
+        .dark-theme nav a {
+            color: #00FFAA;
+        }
+        .dark-theme nav a:hover {
+            color: #00CCFF;
+        }
+        .aurora-theme nav a {
+            color: #66CCCC;
+        }
+        .aurora-theme nav a:hover {
+            color: #CC99FF;
+        }
+        /* Theme Toggle Styles */
+        #theme-toggle {
+            position: relative;
+            background: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 3px 3px 8px #e0e0e0, -3px -3px 8px #ffffff;
+            padding: 5px 10px;
+            cursor: pointer;
+            color: #333;
+            transition: box-shadow 0.2s ease;
+        }
+        #theme-toggle:hover {
+            box-shadow: 2px 2px 6px #c0c0c0, -2px -2px 6px #ffffff;
+        }
+        #theme-toggle:active {
+            box-shadow: inset 2px 2px 6px #c0c0c0, inset -2px -2px 6px #ffffff;
+        }
+        #theme-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
+            padding: 8px;
+            z-index: 1001;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+        #theme-dropdown.show {
+            max-height: 150px;
+            opacity: 1;
+        }
+        #theme-dropdown button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 4px 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #333;
+            font-size: 14px;
+        }
+        #theme-dropdown button:hover {
+            background: #e0e0e0;
+            border-radius: 5px;
+        }
+        .dark-theme #theme-toggle {
+            background: #2d2d2d;
+            box-shadow: 3px 3px 8px #0d0d0d, -3px -3px 8px #3d3d3d;
+            color: #00FFAA;
+        }
+        .dark-theme #theme-toggle:hover {
+            box-shadow: 2px 2px 6px #0d0d0d, -2px -2px 6px #3d3d3d;
+        }
+        .dark-theme #theme-toggle:active {
+            box-shadow: inset 2px 2px 6px #0d0d0d, inset -2px -2px 6px #3d3d3d;
+        }
+        .dark-theme #theme-dropdown {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        }
+        .dark-theme #theme-dropdown button {
+            color: #00FFAA;
+        }
+        .dark-theme #theme-dropdown button:hover {
+            background: #3d3d3d;
+        }
+        .aurora-theme #theme-toggle {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(80, 80, 100, 0.3);
+            color: #66CCCC;
+        }
+        .aurora-theme #theme-toggle:hover {
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme #theme-toggle:active {
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme #theme-dropdown {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+        }
+        .aurora-theme #theme-dropdown button {
+            color: #66CCCC;
+        }
+        .aurora-theme #theme-dropdown button:hover {
+            background: rgba(80, 80, 100, 0.3);
+        }
+        /* Footer Styles */
+        footer {
+            background: #f0f0f0;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 5px 5px 15px #e0e0e0, -5px -5px 15px #ffffff;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .dark-theme footer {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 15px #0d0d0d, -5px -5px 15px #3d3d3d;
+        }
+        .aurora-theme footer {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(80, 80, 100, 0.3);
+        }
+        footer a {
+            color: #1e90ff;
+            text-decoration: none;
+            margin: 0 0.5rem;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        .dark-theme footer a {
+            color: #00CCFF;
+        }
+        .aurora-theme footer a {
+            color: #66CCCC;
+        }
+        /* Burger Menu Styles */
+        .burger-menu {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 20px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+        .burger-menu span {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .dark-theme .burger-menu span {
+            background: #00FFAA;
+        }
+        .aurora-theme .burger-menu span {
+            background: #66CCCC;
+        }
+        .burger-menu.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .burger-menu.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .burger-menu.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+        .mobile-nav {
+            display: none;
+            flex-direction: column;
+            background: #f0f0f0;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            padding: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 15px 15px;
+            z-index: 1000;
+        }
+        .dark-theme .mobile-nav {
+            background: #2d2d2d;
+            box-shadow: 0 5px 15px #0d0d0d;
+        }
+        .aurora-theme .mobile-nav {
+            background: rgba(40, 40, 60, 0.7);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        .mobile-nav a {
+            padding: 0.5rem 0;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .mobile-nav a:hover {
+            color: #1e90ff;
+        }
+        .dark-theme .mobile-nav a {
+            color: #00FFAA;
+        }
+        .dark-theme .mobile-nav a:hover {
+            color: #00CCFF;
+        }
+        .aurora-theme .mobile-nav a {
+            color: #66CCCC;
+        }
+        .aurora-theme .mobile-nav a:hover {
+            color: #CC99FF;
+        }
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .burger-menu {
+                display: flex;
+            }
+            nav {
+                display: none;
+            }
+            .mobile-nav.active {
+                display: flex;
+            }
+            #theme-toggle {
+                padding: 3px 8px;
+                font-size: 14px;
+            }
+            #theme-dropdown {
+                padding: 6px;
+            }
+            #theme-dropdown button {
+                padding: 3px 6px;
+                font-size: 12px;
+            }
+            footer {
+                padding: 1rem;
+            }
+            footer p, footer a {
+                font-size: 14px;
+            }
+        }
+        @media (max-width: 480px) {
+            .burger-menu {
+                width: 24px;
+                height: 16px;
+            }
+            .burger-menu span {
+                height: 3px;
+            }
+            #theme-toggle {
+                padding: 2px 6px;
+                font-size: 12px;
+            }
+            #theme-dropdown {
+                padding: 4px;
+            }
+            #theme-dropdown button {
+                padding: 2px 4px;
+                font-size: 10px;
+            }
+            footer {
+                padding: 0.5rem;
+            }
+            footer p, footer a {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col">
+    <canvas id="auroraCanvas"></canvas>
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Header -->
+    <header class="neumorphic">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-500">Laporan Jalan</h1>
+            <div class="flex items-center">
+                <nav class="hidden md:flex">
+                    <a href="#route-section" onclick="scrollToSection('route-section')">Pencarian Rute</a>
+                    <a href="#report-section" onclick="scrollToSection('report-section')">Laporan Jalan Rusak</a>
+                    <a href="#damage-section" onclick="scrollToSection('damage-section')">Daftar Jalan Rusak</a>
+                    <a href="https://yourwebsite.com" target="_blank">About</a>
+                </div>
+                <div class="burger-menu md:hidden" onclick="toggleBurgerMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="mobile-nav md:hidden">
+                    <a href="#route-section" onclick="scrollToSection('route-section')">Pencarian Rute</a>
+                    <a href="#report-section" onclick="scrollToSection('report-section')">Laporan Jalan Rusak</a>
+                    <a href="#damage-section" onclick="scrollToSection('damage-section')">Daftar Jalan Rusak</a>
+                    <a href="https://yourwebsite.com" target="_blank">About</a>
+                </div>
+                <div class="relative ml-4">
+                    <div id="theme-toggle" onclick="toggleThemeDropdown(event)">Tema</div>
+                    <div id="theme-dropdown">
+                        <button onclick="setTheme('light', event)">Light</button>
+                        <button onclick="setTheme('dark', event)">Dark</button>
+                        <button onclick="setTheme('aurora', event)">Aurora</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow">
+        <div id="route-section" class="neumorphic">
+            <h2 class="text-xl font-bold mb-4 text-blue-500">Pencarian Rute</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="start" class="block text-sm font-medium text-gray-700">Lokasi Awal:</label>
+                    <select id="start" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                        <option value="">Pilih Lokasi Awal</option>
+                        <option value="0">Alun-Alun Gresik</option>
+                        <option value="1">Masjid Agung Gresik</option>
+                        <option value="2">Terminal Bus Bunder</option>
+                        <option value="3">Pelabuhan Gresik</option>
+                        <option value="4">Taman Kota Gresik</option>
+                        <option value="5">Pasar Gresik</option>
+                        <option value="6">Universitas Muhammadiyah Gresik</option>
+                        <option value="7">RSUD Ibnu Sina</option>
+                        <option value="8">Politeknik Semen Indonesia</option>
+                        <option value="9">Makam Sunan Giri</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="end" class="block text-sm font-medium text-gray-700">Lokasi Akhir:</label>
+                    <select id="end" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                        <option value="">Pilih Lokasi Akhir</option>
+                        <option value="0">Alun-Alun Gresik</option>
+                        <option value="1">Masjid Agung Gresik</option>
+                        <option value="2">Terminal Bus Bunder</option>
+                        <option value="3">Pelabuhan Gresik</option>
+                        <option value="4">Taman Kota Gresik</option>
+                        <option value="5">Pasar Gresik</option>
+                        <option value="6">Universitas Muhammadiyah Gresik</option>
+                        <option value="7">RSUD Ibnu Sina</option>
+                        <option value="8">Politeknik Semen Indonesia</option>
+                        <option value="9">Makam Sunan Giri</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="transport" class="block text-sm font-medium text-gray-700">Moda Transportasi:</label>
+                    <select id="transport" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                        <option value="foot-walking">Jalan Kaki</option>
+                        <option value="driving-motorcycle">Sepeda Motor</option>
+                        <option value="driving-car">Mobil</option>
+                        <option value="aircraft">Pesawat</option>
+                        <option value="helicopter">Helikopter</option>
+                        <option value="driving-ojek">Ojek Online</option>
+                        <option value="teleport">Teleport</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="calculateRoutes()" class="w-full neumorphic-button bg-blue-200 text-blue-700">Tampilkan Rute</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="map" class="neumorphic mb-4"></div>
+        <div id="route-info" class="neumorphic p-6 mb-4"></div>
+
+        <div id="report-section" class="neumorphic">
+            <h2 class="text-xl font-bold mb-4 text-green-500">Laporkan Jalan Rusak</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="location-name" class="block text-sm font-medium text-gray-700">Nama Lokasi:</label>
+                    <input type="text" id="location-name" placeholder="Nama Lokasi" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div>
+                    <label for="latitude" class="block text-sm font-medium text-gray-700">Latitude:</label>
+                    <input type="text" id="latitude" placeholder="Latitude" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div>
+                    <label for="longitude" class="block text-sm font-medium text-gray-700">Longitude:</label>
+                    <input type="text" id="longitude" placeholder="Longitude" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div>
+                    <label for="severity" class="block text-sm font-medium text-gray-700">Keparahan (1-10):</label>
+                    <input type="number" id="severity" placeholder="Keparahan (1-10)" min="1" max="10" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700">Status:</label>
+                    <select id="status" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                        <option value="Belum Diperbaiki">Belum Diperbaiki</option>
+                        <option value="Dalam Penggerejaan">Dalam Penggerejaan</option>
+                        <option value="Sudah Diperbaiki">Sudah Diperbaiki</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="progress" class="block text-sm font-medium text-gray-700">Progress (%):</label>
+                    <input type="number" id="progress" placeholder="Progress (0-100)" min="0" max="100" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div class="md:col-span-3">
+                    <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi:</label>
+                    <textarea id="description" placeholder="Deskripsi" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic"></textarea>
+                </div>
+                <div class="md:col-span-3">
+                    <label for="comment" class="block text-sm font-medium text-gray-700">Komentar (Opsional):</label>
+                    <textarea id="comment" placeholder="Tambah Komentar (Opsional)" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic"></textarea>
+                </div>
+                <div class="md:col-span-3">
+                    <label for="file-upload" class="block text-sm font-medium text-gray-700">Unggah Gambar (Opsional):</label>
+                    <input type="file" id="file-upload" class="mt-1 block w-full p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                </div>
+                <div class="md:col-span-3">
+                    <button id="submit-report" onclick="submitReport()" class="w-full neumorphic-button bg-green-200 text-green-700">Kirim Laporan</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="damage-section" class="neumorphic">
+            <h2 class="text-xl font-bold mb-4 text-yellow-500">Daftar Jalan Rusak</h2>
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                <input type="text" id="search-location" placeholder="Cari Lokasi" class="p-2 border rounded-md bg-white text-gray-700 neumorphic flex-1" onkeyup="filterDamageReports()">
+                <select id="filter-status" onchange="filterDamageReports()" class="p-2 border rounded-md bg-white text-gray-700 neumorphic">
+                    <option value="Semua Status">Semua Status</option>
+                    <option value="Belum Diperbaiki">Belum Diperbaiki</option>
+                    <option value="Dalam Penggerejaan">Dalam Penggerejaan</option>
+                    <option value="Sudah Diperbaiki">Sudah Diperbaiki</option>
+                </select>
+            </div>
+            <div id="damage-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div class="marker-legend mt-4 text-sm">
+                <span>Legenda Marker: </span>
+                <span style="color: green;">1-3 (Rendah)</span>
+                <span style="color: orange;">4-7 (Sedang)</span>
+                <span style="color: red;">8-10 (Tinggi)</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="neumorphic">
+        <div class="container mx-auto">
+            <p>© 2025 Laporan Jalan. All rights reserved.</p>
+            <p>Kontak: <a href="mailto:support@laporanjalan.com">support@laporanjalan.com</a> | Telepon: +62 123 456 7890</p>
+            <p>Ikuti kami: 
+                <a href="https://facebook.com" target="_blank">Facebook</a> | 
+                <a href="https://twitter.com" target="_blank">Twitter</a> | 
+                <a href="https://instagram.com" target="_blank">Instagram</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Lightbox untuk Anggaran -->
+    <div id="budget-lightbox" class="lightbox" onclick="closeLightbox(event)">
+        <div class="lightbox-content" onclick="event.stopPropagation();">
+            <span class="close-lightbox" onclick="closeLightbox()">×</span>
+            <h3 class="text-lg font-bold mb-2 text-blue-500">Detail Anggaran Perbaikan</h3>
+            <div id="budget-details"></div>
+            <button id="donate-button" class="mt-4 neumorphic-button bg-yellow-200 text-yellow-700">Sumbangan</button>
+            <div id="donation-form" class="mt-4 hidden">
+                <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="mx-auto mb-2">
+                <p class="text-sm">Nomor Rekening: <strong>1234-5678-9012-3456</strong> (Bank XYZ)</p>
+                <input type="number" id="donation-amount" placeholder="Masukkan Nominal (IDR)" class="mt-2 p-2 border rounded-md w-full bg-white text-gray-700 neumorphic">
+                <button onclick="submitDonation()" class="mt-2 neumorphic-button bg-green-200 text-green-700">Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        // Inisialisasi peta
+        const map = L.map('map').setView([-7.1600, 112.6500], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Data lokasi untuk rute
+        const locations = [
+            { name: "Alun-Alun Gresik", lat: -7.1569070427650985, lon: 112.65620569673409 },
+            { name: "Masjid Agung Gresik", lat: -7.1658419034766245, lon: 112.61388718841367 },
+            { name: "Terminal Bus Bunder", lat: -7.168793893543426, lon: 112.58587177954136 },
+            { name: "Pelabuhan Gresik", lat: -7.155574385770462, lon: 112.66212417881295 },
+            { name: "Taman Kota Gresik", lat: -7.1565557567372045, lon: 112.65655975284977 },
+            { name: "Pasar Gresik", lat: -7.152128495079194, lon: 112.65271485440546 },
+            { name: "Universitas Muhammadiyah Gresik", lat: -7.1608706369929855, lon: 112.6157569521509 },
+            { name: "RSUD Ibnu Sina", lat: -7.167921242968943, lon: 112.60091932187 },
+            { name: "Politeknik Semen Indonesia", lat: -7.167843873037625, lon: 112.64186973906286 },
+            { name: "Makam Sunan Giri", lat: -7.168623323674796, lon: 112.63122334276278 }
+        ];
+
+        // Ikon kustom untuk marker rute (ikon pin)
+        const greenIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+        });
+        const redIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+        });
+
+        // Ikon kustom untuk marker jalan rusak (ikon lingkaran)
+        const getDamageMarkerIcon = (severity) => {
+            let color;
+            if (severity <= 3) color = 'green';
+            else if (severity <= 7) color = 'orange';
+            else color = 'red';
+            return L.divIcon({
+                className: 'damage-marker',
+                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+        };
+
+        // Penanda dan rute di peta
+        let startMarker, endMarker, routePolylines = [];
+        let damageMarkers = [];
+        let lastRouteRequest = null;
+
+        // Animasi Aurora (versi ringan)
+        let auroraAnimationId = null;
+        const auroraCanvas = document.getElementById('auroraCanvas');
+        const auroraCtx = auroraCanvas.getContext('2d');
+        let auroraWaves = [];
+
+        function initializeAurora() {
+            auroraCanvas.width = window.innerWidth;
+            auroraCanvas.height = window.innerHeight;
+
+            auroraWaves = [];
+            for (let i = 0; i < 3; i++) {
+                auroraWaves.push({
+                    offset: Math.random() * 500,
+                    speed: 0.01 + Math.random() * 0.02,
+                    amplitude: 30 + Math.random() * 50,
+                    frequency: 0.001 + Math.random() * 0.002,
+                    colors: [
+                        `rgba(0, 255, 150, 0.1)`,
+                        `rgba(150, 0, 255, 0.1)`,
+                        `rgba(0, 150, 255, 0.1)`
+                    ]
+                });
+            }
+
+            animateAurora();
+        }
+
+        function animateAurora() {
+            auroraCtx.clearRect(0, 0, auroraCanvas.width, auroraCanvas.height);
+
+            auroraWaves.forEach(wave => {
+                wave.offset += wave.speed;
+
+                for (let x = 0; x < auroraCanvas.width; x += 5) {
+                    const y = auroraCanvas.height * 0.6 + Math.sin(x * wave.frequency + wave.offset) * wave.amplitude;
+                    const gradient = auroraCtx.createLinearGradient(0, y - 50, 0, y + 50);
+                    gradient.addColorStop(0, wave.colors[0]);
+                    gradient.addColorStop(0.5, wave.colors[1]);
+                    gradient.addColorStop(1, wave.colors[2]);
+
+                    auroraCtx.fillStyle = gradient;
+                    auroraCtx.fillRect(x, y - 50, 5, 100);
+                }
+            });
+
+            auroraAnimationId = requestAnimationFrame(animateAurora);
+        }
+
+        function stopAuroraAnimation() {
+            if (auroraAnimationId) {
+                cancelAnimationFrame(auroraAnimationId);
+                auroraAnimationId = null;
+            }
+            auroraCtx.clearRect(0, 0, auroraCanvas.width, auroraCanvas.height);
+        }
+
+        // Animasi Partikel
+        const particleCanvas = document.getElementById('particleCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        let particles = [];
+        let particleAnimationId = null;
+
+        function initializeParticles() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+
+            particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * particleCanvas.width,
+                    y: Math.random() * particleCanvas.height,
+                    radius: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: (Math.random() - 0.5) * 2,
+                    color: getParticleColor()
+                });
+            }
+
+            animateParticles();
+        }
+
+        function getParticleColor() {
+            const theme = document.body.classList.contains('dark-theme') ? 'dark' :
+                         document.body.classList.contains('aurora-theme') ? 'aurora' : 'light';
+            switch (theme) {
+                case 'dark':
+                    return `rgba(0, 255, 170, ${Math.random() * 0.5 + 0.3})`;
+                case 'aurora':
+                    return `rgba(${Math.random() * 255}, ${Math.random() * 255}, 255, ${Math.random() * 0.5 + 0.3})`;
+                default:
+                    return `rgba(150, 150, 150, ${Math.random() * 0.5 + 0.3})`;
+            }
+        }
+
+        function animateParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+            particles.forEach(particle => {
+                particle.x += particle.speedX;
+                particle.y += particle.speedY;
+
+                if (particle.x < 0 || particle.x > particleCanvas.width) particle.speedX *= -1;
+                if (particle.y < 0 || particle.y > particleCanvas.height) particle.speedY *= -1;
+
+                particleCtx.beginPath();
+                particleCtx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                particleCtx.fillStyle = particle.color;
+                particleCtx.fill();
+            });
+
+            particleAnimationId = requestAnimationFrame(animateParticles);
+        }
+
+        window.addEventListener('resize', () => {
+            auroraCanvas.width = window.innerWidth;
+            auroraCanvas.height = window.innerHeight;
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            if (document.body.classList.contains('aurora-theme')) {
+                initializeAurora();
+            }
+            initializeParticles();
+        });
+
+        // Fungsi untuk scroll halus ke section
+        function scrollToSection(sectionId) {
+            event.preventDefault();
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                toggleBurgerMenu(); // Tutup menu setelah navigasi
+            }
+        }
+
+        // Fungsi untuk toggle burger menu
+        function toggleBurgerMenu() {
+            const burgerMenu = document.querySelector('.burger-menu');
+            const mobileNav = document.querySelector('.mobile-nav');
+            burgerMenu.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+        }
+
+        // Fungsi untuk menghitung jarak garis lurus (untuk pesawat/helikopter)
+        function calculateStraightDistance(start, end) {
+            const R = 6371;
+            const dLat = (end.lat - start.lat) * Math.PI / 180;
+            const dLon = (end.lon - start.lon) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(start.lat * Math.PI / 180) * Math.cos(end.lat * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(2);
+        }
+
+        function areRoutesDifferent(coords1, coords2) {
+            if (coords1.length !== coords2.length) return true;
+            return !coords1.every((coord, i) => 
+                coord[0] === coords2[i][0] && coord[1] === coords2[i][1]
+            );
+        }
+
+        async function calculateRoutes() {
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            const transport = document.getElementById('transport').value;
+            const routeInfo = document.getElementById('route-info');
+
+            const currentRouteRequest = { start, end, transport };
+            if (lastRouteRequest && 
+                lastRouteRequest.start === start && 
+                lastRouteRequest.end === end && 
+                lastRouteRequest.transport === transport) {
+                return;
+            }
+
+            lastRouteRequest = currentRouteRequest;
+
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            routePolylines.forEach(poly => map.removeLayer(poly));
+            routePolylines = [];
+            routeInfo.innerHTML = '';
+
+            if (start === '' || end === '') {
+                routeInfo.innerHTML = '<p class="error">Pilih lokasi awal dan akhir!</p>';
+                return;
+            }
+            if (start === end) {
+                routeInfo.innerHTML = '<p class="error">Lokasi awal dan akhir tidak boleh sama!</p>';
+                return;
+            }
+
+            startMarker = L.marker([locations[start].lat, locations[start].lon], { icon: greenIcon })
+                .addTo(map)
+                .bindPopup(locations[start].name);
+            endMarker = L.marker([locations[end].lat, locations[end].lon], { icon: redIcon })
+                .addTo(map)
+                .bindPopup(locations[end].name);
+
+            if (transport === 'teleport') {
+                const distance = calculateStraightDistance(locations[start], locations[end]);
+                routeInfo.innerHTML = `
+                    <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic">
+                        <h3 class="text-lg font-semibold text-blue-500">Teleportasi</h3>
+                        <p><strong>Jarak:</strong> ${distance} km (garis lurus)</p>
+                        <p><strong>Perkiraan Waktu:</strong> 0 menit</p>
+                        <p><strong>Jalur:</strong> Tidak ada (langsung sampai)</p>
+                        <p><strong>Jenis Jalan:</strong> Tidak ada</p>
+                        <p><strong>Deskripsi:</strong> Langsung sampai dari ${locations[start].name} ke ${locations[end].name} tanpa perjalanan.</p>
+                        <p><strong>Komentar:</strong> Teknologi teleportasi canggih diperlukan. Pastikan fasilitas teleportasi tersedia.</p>
+                    </div>
+                `;
+                map.fitBounds(L.latLngBounds([
+                    [locations[start].lat, locations[start].lon],
+                    [locations[end].lat, locations[end].lon]
+                ]));
+                return;
+            }
+
+            if (transport === 'aircraft' || transport === 'helicopter') {
+                const distance = calculateStraightDistance(locations[start], locations[end]);
+                const speed = transport === 'aircraft' ? 800 : 200;
+                const time = (distance / speed * 60).toFixed(1);
+                const routeCoords = [
+                    [locations[start].lat, locations[start].lon],
+                    [locations[end].lat, locations[end].lon]
+                ];
+                const polyline = L.polyline(routeCoords, { color: transport === 'aircraft' ? 'cyan' : 'yellow', weight: 5, opacity: 0.5 }).addTo(map);
+                routePolylines.push(polyline);
+
+                routeInfo.innerHTML = `
+                    <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic" onclick="focusRoute(0)">
+                        <h3 class="text-lg font-semibold" style="color: ${transport === 'aircraft' ? 'cyan' : 'yellow'}">${transport === 'aircraft' ? 'Pesawat' : 'Helikopter'}</h3>
+                        <p><strong>Jarak:</strong> ${distance} km (garis lurus)</p>
+                        <p><strong>Perkiraan Waktu:</strong> ${time} menit</p>
+                        <p><strong>Jalur:</strong> Garis lurus di udara</p>
+                        <p><strong>Jenis Jalan:</strong> Tidak ada (perjalanan udara)</p>
+                        <p><strong>Deskripsi:</strong> Perjalanan udara dari ${locations[start].name} ke ${locations[end].name} dengan ${transport === 'aircraft' ? 'pesawat' : 'helikopter'}, tercepat tanpa mengikuti jalan darat.</p>
+                        <p><strong>Komentar:</strong> ${transport === 'aircraft' ? 'Memerlukan bandara untuk lepas landas dan mendarat.' : 'Cocok untuk jarak pendek, memerlukan helipad.'}</p>
+                    </div>
+                `;
+                map.fitBounds(L.latLngBounds([
+                    [locations[start].lat, locations[start].lon],
+                    [locations[end].lat, locations[end].lon]
+                ]));
+                return;
+            }
+
+            const apiKey = '5b3ce3597851110001cf6248653155f0cf554874892f069c8a981df6';
+            const profile = transport === 'foot-walking' ? 'foot-walking' : 'driving-car';
+            const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
+            const coords = [
+                [locations[start].lon, locations[start].lat],
+                [locations[end].lon, locations[end].lat]
+            ];
+
+            try {
+                const routeRequests = [
+                    { name: 'Rute Terpendek', color: 'blue', preference: 'shortest', options: {} },
+                    { name: 'Rute Tercepat', color: 'red', preference: 'fastest', options: {} },
+                    { name: 'Rute Alternatif 1', color: 'green', preference: 'recommended', options: { avoid_features: ['highways'] } },
+                    { name: 'Rute Alternatif 2', color: 'orange', preference: 'recommended', options: { avoid_features: ['residential'] } },
+                    { name: 'Rute Alternatif 3', color: 'purple', preference: 'recommended', options: { avoid_features: ['primary', 'secondary'] } }
+                ];
+
+                const routeResponses = [];
+                const routeCoordsList = [];
+
+                for (let i = 0; i < routeRequests.length; i++) {
+                    const req = routeRequests[i];
+                    try {
+                        const response = await axios.post(url, {
+                            coordinates: coords,
+                            instructions: true,
+                            preference: req.preference,
+                            options: req.options
+                        }, {
+                            headers: { 'Authorization': apiKey, 'Content-Type': 'application/json' }
+                        });
+
+                        const routeCoords = response.data.features?.[0]?.geometry?.coordinates?.map(coord => [coord[1], coord[0]]) || [];
+                        if (routeCoords.length === 0) {
+                            continue;
+                        }
+
+                        let isUnique = true;
+                        for (const existingCoords of routeCoordsList) {
+                            if (!areRoutesDifferent(routeCoords, existingCoords)) {
+                                isUnique = false;
+                                break;
+                            }
+                        }
+
+                        if (!isUnique) {
+                            continue;
+                        }
+
+                        routeCoordsList.push(routeCoords);
+                        routeResponses.push({ ...req, data: response.data });
+                    } catch (err) {
+                        console.error(`Error fetching ${req.name}:`, err.response ? err.response.data : err.message);
+                        continue;
+                    }
+                }
+
+                if (routeResponses.length === 0) {
+                    routeInfo.innerHTML = '<p class="error">Tidak ada rute yang ditemukan. Periksa API key atau koneksi internet.</p>';
+                    return;
+                }
+
+                routeResponses.forEach((route, index) => {
+                    const routeCoords = route.data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    const polyline = L.polyline(routeCoords, { color: route.color, weight: 5, opacity: 0.5 }).addTo(map);
+                    routePolylines.push(polyline);
+
+                    const distance = route.data.features[0].properties.segments?.[0]?.distance
+                        ? (route.data.features[0].properties.segments[0].distance / 1000).toFixed(2)
+                        : 'Tidak tersedia';
+                    let time = route.data.features[0].properties.segments?.[0]?.duration
+                        ? (route.data.features[0].properties.segments[0].duration / 60).toFixed(1)
+                        : 'Tidak tersedia';
+                    const steps = route.data.features[0].properties.segments?.[0]?.steps
+                        ? route.data.features[0].properties.segments[0].steps.map(step => step.instruction).join(' → ')
+                        : 'Tidak tersedia';
+
+                    let roadDescription, description, comment;
+                    if (transport === 'foot-walking') {
+                        roadDescription = steps !== 'Tidak tersedia' ? 'Trotoar dan jalan setapak' : 'Tidak tersedia';
+                        description = route.name === 'Rute Terpendek'
+                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan setapak'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
+                            : route.name === 'Rute Tercepat'
+                            ? `Berjalan kaki dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan setapak'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
+                            : `Berjalan kaki dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk perjalanan santai.`;
+                        comment = 'Cocok untuk olahraga atau perjalanan santai. Pastikan ada trotoar yang aman.';
+                    } else if (transport === 'driving-motorcycle') {
+                        roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan kecil' : 'Tidak tersedia';
+                        description = route.name === 'Rute Terpendek'
+                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
+                            : route.name === 'Rute Tercepat'
+                            ? `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
+                            : `Mengendarai sepeda motor dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk menghindari kemacetan.`;
+                        comment = 'Perhatikan aturan lalu lintas dan keselamatan berkendara.';
+                    } else if (transport === 'driving-ojek') {
+                        roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan kecil' : 'Tidak tersedia';
+                        description = route.name === 'Rute Terpendek'
+                            ? `Menggunakan ojek online dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan jarak optimal.`
+                            : route.name === 'Rute Tercepat'
+                            ? `Menggunakan ojek online dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
+                            : `Menggunakan ojek online dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk menghindari kemacetan.`;
+                        comment = 'Praktis untuk perjalanan cepat. Pastikan memesan ojek online terpercaya.';
+                    } else {
+                        roadDescription = steps !== 'Tidak tersedia' ? 'Jalan utama dan jalan lokal' : 'Tidak tersedia';
+                        description = route.name === 'Rute Terpendek'
+                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur terpendek, melewati ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name} dengan efisiensi jarak yang optimal.`
+                            : route.name === 'Rute Tercepat'
+                            ? `Mengendarai mobil dari ${locations[start].name} melalui jalur tercepat, mengikuti ${steps.split(' → ')[0] || 'jalan utama'}, dan sampai di ${locations[end].name} dengan waktu singkat.`
+                            : `Mengendarai mobil dari ${locations[start].name} melalui jalur alternatif, menghindari ${steps.split(' → ')[0] || 'jalan utama'}, dan tiba di ${locations[end].name}, cocok untuk perjalanan santai.`;
+                        comment = 'Pastikan kondisi mobil baik dan perhatikan rambu lalu lintas.';
+                    }
+
+                    routeInfo.innerHTML += `
+                        <div class="route-desc p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic" onclick="focusRoute(${index})">
+                            <h3 class="text-lg font-semibold" style="color: ${route.color}">${route.name}</h3>
+                            <p><strong>Jarak:</strong> ${distance} km</p>
+                            <p><strong>Perkiraan Waktu:</strong> ${time} menit</p>
+                            <p><strong>Jalur:</strong> ${steps}</p>
+                            <p><strong>Jenis Jalan:</strong> ${roadDescription}</p>
+                            <p><strong>Deskripsi:</strong> ${description}</p>
+                            <p><strong>Komentar:</strong> ${comment}</p>
+                        </div>
+                    `;
+                });
+
+                const bounds = L.latLngBounds([
+                    [locations[start].lat, locations[start].lon],
+                    [locations[end].lat, locations[end].lon]
+                ]);
+                map.fitBounds(bounds);
+            } catch (error) {
+                routeInfo.innerHTML = `<p class="error">Gagal mengambil rute: ${error.message}. Periksa API key atau koneksi internet.</p>`;
+                console.error('Error:', error.response ? error.response.data : error);
+            }
+        }
+
+        function focusRoute(index) {
+            const polyline = routePolylines[index];
+            if (polyline) {
+                routePolylines.forEach(p => p.setStyle({ opacity: 0.5 }));
+                polyline.setStyle({ opacity: 1, weight: 7 });
+                map.fitBounds(polyline.getBounds());
+            }
+        }
+
+        let damageReports = [
+            { name: "Jalan Utama Gresik", lat: -7.156907, lon: 112.656205, severity: 3, description: "Jalan retak ringan", status: "Belum Diperbaiki", progress: 0, comment: "Perlu perhatian awal", file: "https://via.placeholder.com/150?text=Retak+Ringan", budget: { total: 5000000, source: "Dana Desa", details: "Biaya material dan tenaga kerja." } },
+            { name: "Jalan Pelabuhan", lat: -7.143500, lon: 112.655000, severity: 6, description: "Jalan berlubang sedang", status: "Dalam Penggerejaan", progress: 50, comment: "Sedang diperbaiki", file: "https://via.placeholder.com/150?text=Berlubang+Sedang", budget: { total: 15000000, source: "APBD", details: "Perbaikan aspal dan drainase." } },
+            { name: "Jalan Pasar", lat: -7.157500, lon: 112.654000, severity: 9, description: "Jalan rusak parah", status: "Belum Diperbaiki", progress: 0, comment: "Butuh perbaikan mendesak", file: "https://via.placeholder.com/150?text=Rusak+Parah", budget: { total: 30000000, source: "APBN", details: "Rekonstruksi jalan total." } },
+            { name: "Jalan Taman Kota", lat: -7.160800, lon: 112.652500, severity: 2, description: "Jalan retak kecil", status: "Sudah Diperbaiki", progress: 100, comment: "Selesai perbaikan", file: "https://via.placeholder.com/150?text=Retak+Kecil", budget: { total: 2000000, source: "Dana Desa", details: "Perbaikan minor." } },
+            { name: "Jalan Stasiun", lat: -7.156500, lon: 112.648000, severity: 4, description: "Jalan berlubang ringan", status: "Belum Diperbaiki", progress: 0, comment: "Perlu inspeksi", file: "https://via.placeholder.com/150?text=Berlubang+Ringan", budget: { total: 8000000, source: "APBD", details: "Perbaikan aspal." } },
+            { name: "Jalan Universitas", lat: -7.174500, lon: 112.628000, severity: 7, description: "Jalan banjir", status: "Dalam Penggerejaan", progress: 70, comment: "Menunggu drainase", file: "https://via.placeholder.com/150?text=Banjir", budget: { total: 20000000, source: "APBN", details: "Pembangunan drainase dan aspal." } },
+            { name: "Jalan RSUD", lat: -7.165000, lon: 112.642500, severity: 1, description: "Jalan mulus dengan retak kecil", status: "Sudah Diperbaiki", progress: 100, comment: "Perbaikan minor", file: "https://via.placeholder.com/150?text=Retak+Kecil", budget: { total: 1000000, source: "Dana Desa", details: "Tambal sulam." } },
+            { name: "Jalan Terminal", lat: -7.152000, lon: 112.660000, severity: 8, description: "Jalan rusak berat", status: "Belum Diperbaiki", progress: 0, comment: "Butuh perhatian serius", file: "https://via.placeholder.com/150?text=Rusak+Berat", budget: { total: 25000000, source: "APBN", details: "Rekonstruksi jalan." } },
+            { name: "Jalan Makam", lat: -7.139000, lon: 112.632500, severity: 5, description: "Jalan berlubang sedang", status: "Dalam Penggerejaan", progress: 30, comment: "Proses perbaikan", file: "https://via.placeholder.com/150?text=Berlubang+Sedang", budget: { total: 12000000, source: "APBD", details: "Perbaikan aspal." } },
+            { name: "Jalan Politeknik", lat: -7.167843, lon: 112.641869, severity: 10, description: "Jalan rusak total", status: "Belum Diperbaiki", progress: 0, comment: "Perbaikan darurat", file: "https://via.placeholder.com/150?text=Rusak+Total", budget: { total: 40000000, source: "APBN", details: "Rekonstruksi jalan total." } }
+        ];
+
+        function displayDamageReports() {
+            const damageList = document.getElementById('damage-list');
+            damageList.innerHTML = '';
+            const searchTerm = document.getElementById('search-location').value.toLowerCase();
+            const filterStatus = document.getElementById('filter-status').value;
+
+            let filteredReports = damageReports.filter(report => report.progress < 100);
+
+            filteredReports.forEach((report, index) => {
+                if (searchTerm && !report.name.toLowerCase().includes(searchTerm)) return;
+                if (filterStatus !== "Semua Status" && report.status !== filterStatus) return;
+
+                const div = document.createElement('div');
+                div.className = 'damage-item p-4 border rounded-md hover:bg-gray-50 bg-white neumorphic';
+                div.innerHTML = `
+                    <h3 class="text-lg font-semibold text-blue-500">${report.name} (Keparahan: ${report.severity})</h3>
+                    <p><strong>Status:</strong> ${report.status}</p>
+                    <p><strong>Progress:</strong> ${report.progress}%</p>
+                    <p><strong>Deskripsi:</strong> ${report.description}</p>
+                    <p><strong>Komentar:</strong> ${report.comment || 'Tidak ada komentar'}</p>
+                    <div class="mt-2 flex gap-2">
+                        <button onclick="completeReport(${index})" class="neumorphic-button bg-green-200 text-green-700">Selesai</button>
+                        <button onclick="showBudget(${index})" class="neumorphic-button bg-yellow-200 text-yellow-700">Anggaran</button>
+                    </div>
+                `;
+                div.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') showDamageOnMap(index);
+                };
+                damageList.appendChild(div);
+            });
+
+            updateDamageMarkers();
+        }
+
+        function updateDamageMarkers() {
+            damageMarkers.forEach(marker => map.removeLayer(marker));
+            damageMarkers = [];
+
+            const activeReports = damageReports.filter(report => report.progress < 100);
+            activeReports.forEach((report, index) => {
+                const marker = L.marker([report.lat, report.lon], { icon: getDamageMarkerIcon(report.severity) })
+                    .addTo(map);
+                const popupContent = `
+                    <div style="max-width: 200px;">
+                        <b>${report.name}</b><br>
+                        Keparahan: ${report.severity}<br>
+                        Deskripsi: ${report.description}<br>
+                        Status: ${report.status}<br>
+                        Progress: ${report.progress}%<br>
+                        ${report.file ? `<img src="${report.file}" alt="Gambar Jalan Rusak" style="width: 100%; margin-top: 5px;" />` : 'Tidak ada gambar'}<br>
+                        ${report.progress >= 100 ? `<button onclick="completeReport(${index})" style="margin-top: 5px; background-color: green; color: white; padding: 5px; border: none; border-radius: 3px; cursor: pointer;">Selesai Diperbaiki</button>` : ''}
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                damageMarkers.push(marker);
+            });
+        }
+
+        function showDamageOnMap(index) {
+            const report = damageReports.filter(r => r.progress < 100)[index];
+            if (!report) return;
+
+            const marker = damageMarkers[index];
+            if (marker) {
+                marker.openPopup();
+                map.setView([report.lat, report.lon], 15);
+            }
+        }
+
+        window.completeReport = function(index) {
+            damageReports[index].progress = 100;
+            damageReports = damageReports.filter(report => report.progress < 100);
+            displayDamageReports();
+        };
+
+        window.showBudget = function(index) {
+            const report = damageReports.filter(r => r.progress < 100)[index];
+            if (!report) return;
+
+            const budget = report.budget;
+            const budgetDetails = document.getElementById('budget-details');
+            budgetDetails.innerHTML = `
+                <p><strong>Total Anggaran:</strong> Rp ${budget.total.toLocaleString()}</p>
+                <p><strong>Sumber Dana:</strong> ${budget.source}</p>
+                <p><strong>Rincian:</strong> ${budget.details}</p>
+            `;
+            document.getElementById('budget-lightbox').style.display = 'flex';
+            document.getElementById('donation-form').classList.add('hidden');
+
+            const donateButton = document.getElementById('donate-button');
+            donateButton.onclick = () => {
+                document.getElementById('donation-form').classList.toggle('hidden');
+            };
+        };
+
+        window.closeLightbox = function(event) {
+            if (event.target === document.getElementById('budget-lightbox')) {
+                document.getElementById('budget-lightbox').style.display = 'none';
+                document.getElementById('donation-form').classList.add('hidden');
+            }
+        };
+
+        window.submitDonation = function() {
+            const amount = document.getElementById('donation-amount').value;
+            if (!amount || amount <= 0) {
+                alert('Masukkan nominal sumbangan yang valid!');
+                return;
+            }
+            alert(`Terima kasih! Sumbangan sebesar Rp ${amount} telah diterima.`);
+            closeLightbox();
+        };
+
+        function submitReport() {
+            const name = document.getElementById('location-name').value;
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lon = parseFloat(document.getElementById('longitude').value);
+            const severity = parseInt(document.getElementById('severity').value);
+            const description = document.getElementById('description').value;
+            const status = document.getElementById('status').value;
+            const progress = parseInt(document.getElementById('progress').value) || 0;
+            const comment = document.getElementById('comment').value;
+            const file = document.getElementById('file-upload').files[0];
+
+            if (!name || isNaN(lat) || isNaN(lon) || isNaN(severity) || !description || severity < 1 || severity > 10 || progress < 0 || progress > 100) {
+                alert('Mohon lengkapi semua field dengan benar! Keparahan harus antara 1-10, dan progress antara 0-100.');
+                return;
+            }
+
+            const newReport = {
+                name,
+                lat,
+                lon,
+                severity,
+                description,
+                status,
+                progress,
+                comment,
+                file: file ? URL.createObjectURL(file) : null,
+                budget: { total: 10000000, source: "APBD", details: "Perbaikan aspal dan trotoar." }
+            };
+            damageReports.push(newReport);
+
+            document.getElementById('location-name').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('severity').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('status').value = 'Belum Diperbaiki';
+            document.getElementById('progress').value = '';
+            document.getElementById('comment').value = '';
+            document.getElementById('file-upload').value = '';
+
+            displayDamageReports();
+            alert('Laporan berhasil dikirim!');
+        }
+
+        function filteredDamageReports() {
+            displayDamageReports();
+        }
+
+        function toggleThemeDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropdown = document.getElementById('theme-dropdown');
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            } else {
+                dropdown.classList.add('show');
+            }
+        }
+
+        function setTheme(theme, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const body = document.body;
+
+            body.classList.remove('dark-theme', 'light-theme', 'aurora-theme');
+            
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                stopAuroraAnimation();
+            } else if (theme === 'aurora') {
+                body.classList.add('aurora-theme');
+                initializeAurora();
+            } else {
+                body.classList.add('light-theme');
+                stopAuroraAnimation();
+            }
+
+            particles.forEach(particle => {
+                particle.color = getParticleColor();
+            });
+
+            document.getElementById('theme-dropdown').classList.remove('show');
+        }
+
+        document.addEventListener('click', (event) => {
+            const dropdown = document.getElementById('theme-dropdown');
+            const toggle = document.getElementById('theme-toggle');
+            if (!toggle.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+            }
+        );
+
+        displayDamageReports();
+        initializeParticles();
+        setTheme('light');
+    </script>
+</body>
+</html>
